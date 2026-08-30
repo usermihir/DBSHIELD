@@ -1,0 +1,64 @@
+version: "3.9"
+
+# =============================================================================
+# DBSHIELD — Multi-Node Demo Stack
+# =============================================================================
+# Demonstrates that the Redis-backed Token Bucket rate limiter enforces limits
+# globally across all backend replicas, unlike the in-memory limiter.
+#
+# Services:
+#   redis   — Shared rate limit state store
+#   backend — 3 replicas of the FastAPI app (round-robin via Nginx)
+#   nginx   — Load balancer, exposes port 8000
+#
+# Usage:
+#   docker compose up --build --scale backend=3
+#   # Then run ddos_attack/ddos_simulator.py and observe 429s across all nodes.
+
+services:
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Feature toggles — mirrors .env but overridden for Docker demo
+      ENABLE_DDOS_PROTECTION: "true"
+      ENABLE_REDIS_RATE_LIMITER: "true"
+      REDIS_URL: "redis://redis:6379"
+      ENABLE_DB_PROXY: "true"
+      ENABLE_SQLI_PROTECTION: "true"
+      ENABLE_AUTH_BYPASS_PROTECTION: "true"
+      # Rate limiter config
+      RATE_LIMIT_CAPACITY: "20"
+      RATE_LIMIT_REFILL_RATE: "10"
+      RATE_LIMIT_KEY_TTL: "300"
+      # Database
+      SQLITE_DB_PATH: "/app/database/dbshield.sqlite3"
+    volumes:
+      - ./database:/app/database:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend

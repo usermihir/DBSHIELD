@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+python-dotenv
+psycopg2-binary
+
+sqlparse
+
+requests
+colorama
+
+aiohttp
+
+# Feature 2 — Redis distributed rate limiter
+redis>=5.0
+
+# Testing
+pytest

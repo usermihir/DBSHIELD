@@ -1,0 +1,29 @@
+# Environment Variables
+.env
+.env.local
+
+# Python
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Database
+database/*.sqlite3
+database/*.db
+
+# Node / Frontend
+node_modules/
+build/
+dist/
+.npm/
+
+# IDEs and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.code*
